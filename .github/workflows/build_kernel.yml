@@ -1,1 +1,90 @@
+name: Build OnePlus 9RT Kernel (SukiSU)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize Build Space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get clean
+
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          depth: 1
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex git libelf-dev libssl-dev lld llvm python3 python-is-python3 tar unzip wget zip zstd
+
+      - name: Download Toolchain (Clang)
+        run: |
+          mkdir -p clang
+          cd clang
+          wget -q https://googlesource.com -O clang.tar.gz
+          tar -xzf clang.tar.gz
+          rm clang.tar.gz
+
+      - name: Integrate SukiSU Ultra
+        run: |
+          curl -LSs "https://githubusercontent.com" | bash -s builtin
+
+      - name: Apply Config & Tweaks
+        run: |
+          DEFCONFIG=$(find arch/arm64/configs -name "*lahaina*defconfig" -o -name "*martini*defconfig" | head -n 1 | sed 's|arch/arm64/configs/||')
+          echo "Using defconfig: $DEFCONFIG"
+          echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
+
+          ./scripts/config --file arch/arm64/configs/$DEFCONFIG \
+            -e KSU \
+            -e KPM \
+            -e KALLSYMS \
+            -e KALLSYMS_ALL
+
+          ./scripts/config --file arch/arm64/configs/$DEFCONFIG \
+            -e TCP_CONG_BBR \
+            -e DEFAULT_BBR \
+            -e NET_SCH_FQ_CODEL \
+            -e HZ_300 \
+            -d HZ_100 \
+            -d HZ_250 \
+            -e LTO_CLANG_THIN \
+            -d LTO_NONE \
+            -d DEBUG_KERNEL
+
+      - name: Compile Kernel
+        run: |
+          export PATH="$PWD/clang/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+
+          make O=out ARCH=arm64 $DEFCONFIG
+          make -j$(nproc --all) O=out \
+            ARCH=arm64 \
+            CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            LLVM=1 \
+            LLVM_IAS=1
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com AnyKernel3
+          cp out/arch/arm64/boot/Image AnyKernel3/
+          find out/arch/arm64/boot/ -name "*.dtb" -exec cp {} AnyKernel3/ \;
+          find out/arch/arm64/boot/ -name "dtbo.img" -exec cp {} AnyKernel3/ \;
+          cd AnyKernel3
+          zip -r9 ../OnePlus9RT-SukiSU-Kernel.zip * -x .git README.md *placeholder
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OnePlus9RT-SukiSU-Kernel
+          path: OnePlus9RT-SukiSU-Kernel.zip
 
