@@ -12,11 +12,15 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           sudo apt-get clean
 
-      - name: Checkout Kernel Source with Submodules
+      - name: Checkout Kernel Source & Submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
           depth: 1
+
+      - name: Initialize Submodules Explicitly
+        run: |
+          git submodule update --init --recursive
 
       - name: Install Build Dependencies
         run: |
