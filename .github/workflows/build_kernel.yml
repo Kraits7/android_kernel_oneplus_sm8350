@@ -31,7 +31,7 @@ jobs:
           # Используем официальный скрипт интеграции SukiSU
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
 
-        - name: Apply Config & Tweaks
+      - name: Apply Config & Tweaks
         run: |
           echo "=== Список всех дефконфигов в репозитории ==="
           find arch/arm64/configs -type f
