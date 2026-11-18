@@ -33,21 +33,27 @@ jobs:
 
       - name: Apply Config & Tweaks
         run: |
-          DEFCONFIG=$(find arch/arm64/configs -name "*lahaina*defconfig" -o -name "*martini*defconfig" | head -n 1 | sed 's|arch/arm64/configs/||')
-          if [ -z "$DEFCONFIG" ]; then
-            echo "Error: Defconfig not found!"
+          # Ищем рекурсивно с учетом папок vendor/ и др.
+          DEFCONFIG_PATH=$(find arch/arm64/configs -name "*lahaina*defconfig" -o -name "*martini*defconfig" -o -name "*lemans*defconfig" | head -n 1)
+          
+          if [ -z "$DEFCONFIG_PATH" ]; then
+            echo "Error: Defconfig not found! Listing available configs:"
+            find arch/arm64/configs -name "*.defconfig"
             exit 1
           fi
-          echo "Using defconfig: $DEFCONFIG"
+          
+          DEFCONFIG=$(basename "$DEFCONFIG_PATH")
+          echo "Using defconfig: $DEFCONFIG (Path: $DEFCONFIG_PATH)"
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          ./scripts/config --file arch/arm64/configs/$DEFCONFIG \
+          # Путь к реальному конфигу для scripts/config (т.к. он лежит в подпапке)
+          ./scripts/config --file "$DEFCONFIG_PATH" \
             -e KSU \
             -e KPM \
             -e KALLSYMS \
             -e KALLSYMS_ALL
 
-          ./scripts/config --file arch/arm64/configs/$DEFCONFIG \
+          ./scripts/config --file "$DEFCONFIG_PATH" \
             -e TCP_CONG_BBR \
             -e DEFAULT_BBR \
             -e NET_SCH_FQ_CODEL \
@@ -57,7 +63,7 @@ jobs:
             -e LTO_CLANG_THIN \
             -d LTO_NONE \
             -d DEBUG_KERNEL
-
+            
       - name: Compile Kernel
         run: |
           export PATH="$PWD/clang/bin:$PATH"
