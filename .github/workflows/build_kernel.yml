@@ -26,7 +26,8 @@ jobs:
         run: |
           mkdir -p clang
           cd clang
-          wget -q https://googlesource.com -O clang.tar.gz
+          LATEST_URL=$(curl -s https://github.com | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)
+          wget -q "$LATEST_URL" -O clang.tar.gz
           tar -xzf clang.tar.gz
           rm clang.tar.gz
 
