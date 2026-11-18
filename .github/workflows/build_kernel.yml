@@ -12,9 +12,10 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           sudo apt-get clean
 
-      - name: Checkout Kernel Source
+      - name: Checkout Kernel Source with Submodules
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           depth: 1
 
       - name: Install Build Dependencies
@@ -28,12 +29,11 @@ jobs:
 
       - name: Integrate SukiSU Ultra
         run: |
-          # Используем официальный скрипт интеграции SukiSU
+          # Официальный скрипт интеграции SukiSU
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
 
       - name: Apply Config & Tweaks
         run: |
-          # Жестко указываем конфиг для OnePlus 9RT, который нашелся в списке
           DEFCONFIG_PATH="arch/arm64/configs/9rt_defconfig"
           
           if [ ! -f "$DEFCONFIG_PATH" ]; then
@@ -61,7 +61,7 @@ jobs:
             -e LTO_CLANG_THIN \
             -d LTO_NONE \
             -d DEBUG_KERNEL
-            
+
       - name: Compile Kernel
         run: |
           export PATH="$PWD/clang/bin:$PATH"
@@ -83,7 +83,6 @@ jobs:
           git clone --depth=1 https://github.com/Kernel-SU/AnyKernel3 -b master AnyKernel3
           rm -rf AnyKernel3/.git
           
-          # Копируем ядро и device tree
           cp out/arch/arm64/boot/Image AnyKernel3/
           find out/arch/arm64/boot/ -name "*.dtb" -exec cp {} AnyKernel3/ \;
           find out/arch/arm64/boot/ -name "dtbo.img" -exec cp {} AnyKernel3/ \;
