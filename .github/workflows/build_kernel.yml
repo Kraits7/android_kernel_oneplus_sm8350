@@ -20,19 +20,24 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ccache curl flex git libelf-dev libssl-dev lld llvm python3 python-is-python3 tar unzip wget zip zstd
-      
+          sudo apt-get install -y bc bison build-essential ccache curl flex git libelf-dev libssl-dev lld llvm python3 python-is-python3 tar unzip wget zip zstd gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
       - name: Download Toolchain (Clang)
         run: |
-          git clone --depth=1 https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone
+          git clone --depth=1 https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone clang
 
       - name: Integrate SukiSU Ultra
         run: |
-          curl -LSs "https://githubusercontent.com" | bash -s builtin
+          # Используем официальный скрипт интеграции SukiSU
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
 
       - name: Apply Config & Tweaks
         run: |
           DEFCONFIG=$(find arch/arm64/configs -name "*lahaina*defconfig" -o -name "*martini*defconfig" | head -n 1 | sed 's|arch/arm64/configs/||')
+          if [ -z "$DEFCONFIG" ]; then
+            echo "Error: Defconfig not found!"
+            exit 1
+          fi
           echo "Using defconfig: $DEFCONFIG"
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
@@ -71,10 +76,14 @@ jobs:
 
       - name: Package with AnyKernel3
         run: |
-          git clone --depth=1 https://github.com AnyKernel3
+          git clone --depth=1 https://github.com/Kernel-SU/AnyKernel3 -b master AnyKernel3
+          rm -rf AnyKernel3/.git
+          
+          # Копируем ядро и device tree
           cp out/arch/arm64/boot/Image AnyKernel3/
           find out/arch/arm64/boot/ -name "*.dtb" -exec cp {} AnyKernel3/ \;
           find out/arch/arm64/boot/ -name "dtbo.img" -exec cp {} AnyKernel3/ \;
+          
           cd AnyKernel3
           zip -r9 ../OnePlus9RT-SukiSU-Kernel.zip * -x .git README.md *placeholder
 
@@ -83,4 +92,3 @@ jobs:
         with:
           name: OnePlus9RT-SukiSU-Kernel
           path: OnePlus9RT-SukiSU-Kernel.zip
-
