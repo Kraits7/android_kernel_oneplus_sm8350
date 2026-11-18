@@ -24,12 +24,7 @@ jobs:
       
       - name: Download Toolchain (Clang)
         run: |
-          mkdir -p clang
-          cd clang
-          LATEST_URL=$(curl -s https://github.com | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)
-          wget -q "$LATEST_URL" -O clang.tar.gz
-          tar -xzf clang.tar.gz
-          rm clang.tar.gz
+          git clone --depth=1 https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone
 
       - name: Integrate SukiSU Ultra
         run: |
