@@ -33,20 +33,16 @@ jobs:
 
       - name: Apply Config & Tweaks
         run: |
-          echo "=== Список всех дефконфигов в репозитории ==="
-          find arch/arm64/configs -type f
-          echo "============================================="
+          # Жестко указываем конфиг для OnePlus 9RT, который нашелся в списке
+          DEFCONFIG_PATH="arch/arm64/configs/9rt_defconfig"
           
-          # Пробуем найти хоть какой-нибудь дефконфиг в корне или папках
-          DEFCONFIG_PATH=$(find arch/arm64/configs -name "*defconfig" | head -n 1)
-          
-          if [ -z "$DEFCONFIG_PATH" ]; then
-            echo "Error: Совсем нет дефконфигов!"
+          if [ ! -f "$DEFCONFIG_PATH" ]; then
+            echo "Error: 9rt_defconfig not found!"
             exit 1
           fi
           
           DEFCONFIG=$(basename "$DEFCONFIG_PATH")
-          echo "Используем найденный конфиг: $DEFCONFIG_PATH"
+          echo "Using defconfig: $DEFCONFIG"
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
           ./scripts/config --file "$DEFCONFIG_PATH" \
