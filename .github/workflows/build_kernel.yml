@@ -31,22 +31,24 @@ jobs:
           # Используем официальный скрипт интеграции SukiSU
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
 
-      - name: Apply Config & Tweaks
+        - name: Apply Config & Tweaks
         run: |
-          # Ищем рекурсивно с учетом папок vendor/ и др.
-          DEFCONFIG_PATH=$(find arch/arm64/configs -name "*lahaina*defconfig" -o -name "*martini*defconfig" -o -name "*lemans*defconfig" | head -n 1)
+          echo "=== Список всех дефконфигов в репозитории ==="
+          find arch/arm64/configs -type f
+          echo "============================================="
+          
+          # Пробуем найти хоть какой-нибудь дефконфиг в корне или папках
+          DEFCONFIG_PATH=$(find arch/arm64/configs -name "*defconfig" | head -n 1)
           
           if [ -z "$DEFCONFIG_PATH" ]; then
-            echo "Error: Defconfig not found! Listing available configs:"
-            find arch/arm64/configs -name "*.defconfig"
+            echo "Error: Совсем нет дефконфигов!"
             exit 1
           fi
           
           DEFCONFIG=$(basename "$DEFCONFIG_PATH")
-          echo "Using defconfig: $DEFCONFIG (Path: $DEFCONFIG_PATH)"
+          echo "Используем найденный конфиг: $DEFCONFIG_PATH"
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          # Путь к реальному конфигу для scripts/config (т.к. он лежит в подпапке)
           ./scripts/config --file "$DEFCONFIG_PATH" \
             -e KSU \
             -e KPM \
